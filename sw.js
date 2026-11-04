@@ -1,5 +1,5 @@
 // Caches the app shell so it opens instantly and works offline (lookups still need internet).
-const CACHE = "macro-scan-v1";
+const CACHE = "macro-scan-v2";
 const SHELL = ["./", "index.html", "app.js", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png",
   "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())) });

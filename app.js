@@ -96,7 +96,7 @@ $("#importFile").addEventListener("change", async ev => {
 
 /* ---------- sheet ---------- */
 const veil = $("#veil"), sheet = $("#sheet");
-const actions = {};
+const actions = { close: () => closeSheet() };
 function openSheet(html){ sheet.innerHTML = html; veil.hidden = false; sheet.scrollTop = 0 }
 function closeSheet(){ veil.hidden = true; sheet.innerHTML = "" }
 veil.addEventListener("click", e => { if (e.target === veil) closeSheet() });
