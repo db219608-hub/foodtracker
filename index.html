@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Macro Scan</title>
+<meta name="theme-color" content="#121310">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Macro Scan">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+
+/* Layout: one narrow column built like a food label — a Nutrition Facts panel for today, then the log, scanner pinned at the bottom. */
+:root{
+  --paper:#fbfbf8; --ink:#121310; --muted:#5d6058; --rule:#121310; --hair:#d9dad3; --card:#ffffff;
+  --accent:#d0341f;
+  --pro:#2f6fb5; --carb:#c98a12; --fat:#7a4fb0;
+  --display:"Archivo",Helvetica,Arial,sans-serif;
+  --body:"Archivo",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#151613; --ink:#ecece6; --muted:#a3a59c; --rule:#ecece6; --hair:#33352f; --card:#1d1e1a;
+  --accent:#ff6a52; --pro:#6ea8ec; --carb:#e6b04a; --fat:#b18ae6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#151613; --ink:#ecece6; --muted:#a3a59c; --rule:#ecece6; --hair:#33352f; --card:#1d1e1a;
+  --accent:#ff6a52; --pro:#6ea8ec; --carb:#e6b04a; --fat:#b18ae6; color-scheme:dark}
+html,body{background:var(--paper);color:var(--ink)}
+body{font-family:var(--body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 120px}
+.wrap{max-width:460px;margin:0 auto;display:grid;gap:20px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.daybar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.daybar h1{font-family:var(--display);font-stretch:70%;font-weight:800;font-size:15px;letter-spacing:.08em;text-transform:uppercase;margin:0;text-align:center}
+.daybar small{display:block;font-weight:500;letter-spacing:.04em;color:var(--muted);text-transform:none;font-stretch:100%}
+.icon-btn{width:40px;height:40px;border:1px solid var(--hair);background:var(--card);border-radius:999px;font-size:18px;line-height:1}
+.icon-btn:disabled{opacity:.35;cursor:default}
+
+/* Nutrition Facts panel */
+.facts{border:2px solid var(--rule);padding:6px 10px 10px;background:var(--card)}
+.facts h2{font-family:var(--display);font-stretch:62%;font-weight:900;font-size:40px;line-height:1;margin:0;letter-spacing:-.01em}
+.facts .sub{font-size:13px;display:flex;justify-content:space-between;border-bottom:10px solid var(--rule);padding:2px 0 4px}
+.cal{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:5px solid var(--rule);padding:4px 0 2px}
+.cal .lbl{font-family:var(--display);font-weight:900;font-size:26px;font-stretch:80%;line-height:1}
+.cal .lbl span{display:block;font-size:12px;font-weight:700;font-stretch:100%}
+.cal .num{font-family:var(--display);font-weight:900;font-size:44px;font-stretch:80%;line-height:.9;font-variant-numeric:tabular-nums}
+.cal .num em{font-style:normal;font-size:16px;font-weight:600;color:var(--muted)}
+.dvhead{text-align:right;font-size:12px;font-weight:800;border-bottom:1px solid var(--rule);padding:3px 0}
+.macro{display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:10px;border-bottom:1px solid var(--rule);padding:5px 0 6px}
+.macro:last-child{border-bottom:none}
+.macro b{font-weight:800}
+.macro .g{font-variant-numeric:tabular-nums}
+.macro .g small{color:var(--muted)}
+.macro .pct{font-weight:800;font-variant-numeric:tabular-nums}
+.bar{grid-column:1/-1;height:6px;background:var(--hair);margin-top:5px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;transition:width .4s ease}
+.over .pct{color:var(--accent)}
+.left{font-size:12.5px;color:var(--muted);margin-top:6px}
+
+/* Log */
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--rule);padding-bottom:4px}
+.sec-h h3{margin:0;font-family:var(--display);font-stretch:70%;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:.08em}
+.sec-h span{font-size:12.5px;color:var(--muted)}
+.log{list-style:none;margin:0;padding:0}
+.log li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--hair);align-items:start}
+.log .nm{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.log .nm small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.log .kc{font-family:var(--display);font-weight:800;font-stretch:80%;font-size:20px;font-variant-numeric:tabular-nums;text-align:right;line-height:1.1}
+.log .kc small{font-size:11px;font-weight:600;color:var(--muted)}
+.chips{display:flex;gap:10px;font-family:var(--mono);font-size:12px;flex-wrap:wrap}
+.chips .p{color:var(--pro)}.chips .c{color:var(--carb)}.chips .f{color:var(--fat)}
+.del{background:none;border:none;color:var(--muted);font-size:12.5px;padding:2px 0;text-decoration:underline;justify-self:end}
+.del.armed{color:var(--accent);font-weight:700}
+.empty{padding:22px 12px;text-align:center;color:var(--muted);border:1px dashed var(--hair)}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:2px}
+
+details.goals{border-top:1px solid var(--hair);padding-top:10px}
+details.goals summary{cursor:pointer;font-weight:700;font-size:14px}
+.ggrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+label.f{display:grid;gap:3px;font-size:12.5px;color:var(--muted);font-weight:600}
+label.f input{border:1px solid var(--hair);background:var(--card);padding:9px 10px;border-radius:6px;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums;width:100%;box-sizing:border-box}
+.note{font-size:12.5px;color:var(--muted)}
+
+/* Bottom action bar */
+.dock{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:2px solid var(--rule);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:5}
+.dock .in{max-width:460px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:10px}
+.scan{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--ink);color:var(--paper);border:none;border-radius:8px;padding:14px;font-family:var(--display);font-weight:800;font-stretch:80%;font-size:19px;letter-spacing:.02em}
+.scan svg{width:30px;height:20px}
+.ghost{border:2px solid var(--ink);background:transparent;border-radius:8px;padding:0 14px;font-weight:700}
+
+/* Sheet */
+.veil{position:fixed;inset:0;background:color-mix(in srgb,var(--ink) 45%,transparent);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--paper);width:100%;max-width:500px;max-height:92%;overflow:auto;border-radius:14px 14px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));box-sizing:border-box;display:grid;gap:14px}
+.sheet h4{margin:0;font-family:var(--display);font-stretch:75%;font-weight:800;font-size:22px;line-height:1.1;text-wrap:balance}
+.status{font-size:14px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.status.err{color:var(--accent)}
+.spin{width:14px;height:14px;border:2px solid var(--hair);border-top-color:var(--ink);border-radius:50%;animation:sp .8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+.code{font-family:var(--mono);font-size:13px;background:var(--card);border:1px solid var(--hair);padding:2px 6px;border-radius:4px}
+.badge{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:999px;border:1px solid currentColor}
+.badge.est{color:var(--carb)}.badge.ok{color:var(--pro)}
+.opts{display:grid;gap:8px}
+.opt{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:1px;border:1px solid var(--hair);background:var(--card);border-radius:8px;padding:11px 12px}
+.opt b{font-size:15px}.opt span{font-size:12.5px;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 0;min-width:0}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:40px;height:40px;border-radius:8px;border:1px solid var(--hair);background:var(--card);font-size:20px}
+.stepper output{font-family:var(--display);font-weight:800;font-size:22px;min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
+.primary{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:14px;font-weight:800;font-size:16px}
+.primary:disabled{opacity:.5}
+.link{background:none;border:none;color:var(--muted);text-decoration:underline;font-size:13.5px;padding:4px}
+.tot{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* live scanner */
+.cam{position:fixed;inset:0;background:#000;z-index:30;display:flex;flex-direction:column}
+.cam video{flex:1;width:100%;height:100%;object-fit:cover;min-height:0}
+.cam .frame{position:absolute;left:50%;top:42%;width:min(78vw,340px);height:min(40vw,170px);transform:translate(-50%,-50%);border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+.cam .laser{position:absolute;left:6%;right:6%;top:50%;height:2px;background:#ff5a43;box-shadow:0 0 8px #ff5a43;animation:lz 1.6s ease-in-out infinite alternate}
+@keyframes lz{from{top:18%}to{top:82%}}
+.cam .bar2{position:absolute;left:0;right:0;bottom:0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:10px;color:#fff;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.7) 30%)}
+.cam .bar2 p{margin:0;font-size:14px}
+.cam .bar2 .row button{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:12px;font-weight:700}
+.results{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.results button{width:100%;text-align:left;border:1px solid var(--hair);background:var(--card);border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 10px}
+.results b{font-size:14.5px;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.results span{font-size:12px;color:var(--muted)}
+.results em{font-style:normal;font-family:var(--mono);font-size:12.5px;grid-row:1/3;grid-column:2;align-self:center}
+.searchrow{display:flex;gap:8px}
+.searchrow input{flex:1;min-width:0;border:1px solid var(--hair);background:var(--card);padding:10px;border-radius:8px;font-size:16px;color:var(--ink)}
+.searchrow button{border:none;background:var(--ink);color:var(--paper);border-radius:8px;padding:0 14px;font-weight:700}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.tools button,.tools label{border:1px solid var(--hair);background:var(--card);border-radius:6px;padding:8px 10px;font-size:13px;font-weight:600;cursor:pointer}
+.recent{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.recent button{flex:none;border:1px solid var(--hair);background:var(--card);border-radius:999px;padding:6px 11px;font-size:13px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="daybar">
+    <button class="icon-btn" id="prevDay" aria-label="Previous day">‹</button>
+    <h1 id="dayTitle">Today<small></small></h1>
+    <button class="icon-btn" id="nextDay" aria-label="Next day">›</button>
+  </header>
+
+  <section class="facts" aria-label="Daily totals">
+    <h2>Nutrition Facts</h2>
+    <div class="sub"><span id="itemCount">0 items logged</span><span>Daily totals</span></div>
+    <div class="cal">
+      <div class="lbl">Calories<span>eaten today</span></div>
+      <div class="num"><span id="calNum">0</span> <em>/ <span id="calGoal">2200</span></em></div>
+    </div>
+    <div class="dvhead">% of Goal</div>
+    <div id="macros"></div>
+    <div class="left" id="leftLine"></div>
+  </section>
+
+  <section>
+    <div class="sec-h"><h3>Food log</h3><span id="logHint">Tap remove twice to delete</span></div>
+    <ul class="log" id="log"></ul>
+    <div class="empty" id="empty"></div>
+  </section>
+
+  <details class="goals">
+    <summary>Goals &amp; backup</summary>
+    <div class="ggrid">
+      <label class="f">Calories<input id="gKcal" type="number" inputmode="numeric" min="0"></label>
+      <label class="f">Protein (g)<input id="gP" type="number" inputmode="numeric" min="0"></label>
+      <label class="f">Carbs (g)<input id="gC" type="number" inputmode="numeric" min="0"></label>
+      <label class="f">Fat (g)<input id="gF" type="number" inputmode="numeric" min="0"></label>
+    </div>
+    <p class="note">Everything is saved on this phone. Export a backup now and then so you don't lose your history.</p>
+    <div class="tools">
+      <button id="exportJson">Export backup</button>
+      <label for="importFile">Restore backup</label><input type="file" id="importFile" accept="application/json,.json" hidden>
+      <button id="exportCsv">Export CSV</button>
+    </div>
+    <p class="note" id="toolMsg"></p>
+  </details>
+</div>
+
+<div class="dock"><div class="in">
+  <button class="scan" id="scanBtn">
+    <svg viewBox="0 0 30 20" aria-hidden="true" fill="currentColor"><rect x="0" width="2" height="20"/><rect x="4" width="1" height="20"/><rect x="7" width="3" height="20"/><rect x="12" width="1" height="20"/><rect x="15" width="2" height="20"/><rect x="19" width="1" height="20"/><rect x="22" width="3" height="20"/><rect x="27" width="1" height="20"/><rect x="29" width="1" height="20"/></svg>
+    Scan barcode
+  </button>
+  <button class="ghost" id="manualBtn">Add</button>
+</div></div>
+<input type="file" id="barcodeFile" accept="image/*" capture="environment" hidden>
+
+<div class="cam" id="cam" hidden>
+  <video id="video" playsinline muted autoplay></video>
+  <div class="frame"><div class="laser"></div></div>
+  <div class="bar2">
+    <p id="camMsg">Line up the barcode inside the box</p>
+    <div class="row"><button id="camPhoto">Use a photo</button><button id="camType">Type number</button><button id="camClose">Close</button></div>
+  </div>
+</div>
+
+<div class="veil" id="veil" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
